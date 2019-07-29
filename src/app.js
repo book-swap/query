@@ -5,6 +5,8 @@ const convert = require("xml-js");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
+const passport = require("passport");
+const passportJwtStrategy = require("./PassportJwtStrategy");
 
 const app = express();
 
@@ -54,12 +56,14 @@ const convertGoodreadsXmlResponseToJson = (xmlResponse, limit = 3) => {
   const coverUrl = replaceDefaultCover(
     convertedResponse.best_book.image_url._text
   );
-  return {
-    title: convertedResponse.best_book.title._text,
-    author: convertedResponse.best_book.author.name._text,
-    rating: convertedResponse.average_rating._text,
-    coverUrl
-  };
+  return [
+    {
+      title: convertedResponse.best_book.title._text,
+      author: convertedResponse.best_book.author.name._text,
+      rating: convertedResponse.average_rating._text,
+      coverUrl
+    }
+  ];
 };
 
 const query = async (req, res, next) => {
@@ -79,6 +83,11 @@ const query = async (req, res, next) => {
     return next(error);
   }
 };
+
+// Passport to make sure the user is logged in
+app.use(passport.initialize());
+passport.use(passportJwtStrategy);
+app.use(passport.authenticate("jwt", { session: false }));
 
 // Routes
 app.get("/", query);
